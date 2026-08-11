@@ -1,3 +1,4 @@
+mod config;
 mod engine;
 mod feed;
 mod models;
@@ -8,55 +9,45 @@ use tonic::Request;
 use tonic::metadata::MetadataValue;
 use tonic::transport::{Channel, ClientTlsConfig};
 
+use crate::config::Cfg;
+
 pub mod orderbook {
     tonic::include_proto!("hyperliquid");
 }
 
-const GRPC_ENDPOINT: &str = "";
-const AUTH_TOKEN: &str = "";
-
-async fn orderbook_client() -> Result<OrderBookStreamingClient<Channel>, Box<dyn std::error::Error>>
-{
-    let channel = Channel::from_shared(GRPC_ENDPOINT)?
+async fn orderbook_client(
+    endpoint: String,
+) -> Result<OrderBookStreamingClient<Channel>, Box<dyn std::error::Error>> {
+    let channel = Channel::from_shared(endpoint)?
         .tls_config(ClientTlsConfig::new().with_native_roots())?
         .connect()
         .await?;
     Ok(OrderBookStreamingClient::new(channel))
 }
 
-fn with_auth<T>(message: T) -> Result<Request<T>, Box<dyn std::error::Error>> {
+fn with_auth<T>(message: T, token: String) -> Result<Request<T>, Box<dyn std::error::Error>> {
     let mut request = Request::new(message);
     request
         .metadata_mut()
-        .insert("x-token", AUTH_TOKEN.parse::<MetadataValue<_>>()?);
+        .insert("x-token", token.parse::<MetadataValue<_>>()?);
     Ok(request)
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let coin = "BTC";
-    let level = 5u32;
-    let n_sig_figs: Option<u32> = None;
-    let mantissa: Option<u64> = None;
-    let skip_initial_snapshot = false;
-
-    println!("\n{}", "=".repeat(60));
-    println!("Endpoint: {}", GRPC_ENDPOINT);
-    println!("Auth: {}", AUTH_TOKEN);
-    println!("{}", "=".repeat(60));
-
-    let mut client = orderbook_client().await?;
+    let config = Cfg::load()?;
+    let mut client = orderbook_client(config.grpc.endpoint).await?;
 
     let request = L2BookDiffRequest {
-        coins: vec![coin.to_string()],
-        n_levels: level,
-        n_sig_figs,
-        mantissa,
-        skip_initial_snapshot,
+        coins: config.stream.coins,
+        n_levels: config.stream.n_levels,
+        n_sig_figs: None,
+        mantissa: None,
+        skip_initial_snapshot: false,
     };
 
     let mut stream = client
-        .stream_l2_book_diff(with_auth(request)?)
+        .stream_l2_book_diff(with_auth(request, config.grpc.auth_token)?)
         .await?
         .into_inner();
 

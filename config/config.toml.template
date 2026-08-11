@@ -1,0 +1,7 @@
+[grpc]
+endpoint = ""
+auth_token = ""
+
+[stream]
+coins = ["BTC"]
+n_levels = 5
