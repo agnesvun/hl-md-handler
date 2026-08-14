@@ -1,0 +1,103 @@
+use tokio::sync::mpsc::Sender;
+use tonic::metadata::MetadataValue;
+use tonic::transport::{Channel, ClientTlsConfig};
+use tonic::{Request, Streaming};
+
+use crate::config::Cfg;
+use crate::feeds::feed::{BoxError, Feed};
+use crate::orderbook::order_book_streaming_client::OrderBookStreamingClient;
+use crate::orderbook::{L2BookDiffRequest, L2BookDiffUpdate};
+
+async fn orderbook_client(endpoint: String) -> Result<OrderBookStreamingClient<Channel>, BoxError> {
+    let channel = Channel::from_shared(endpoint)?
+        .tls_config(ClientTlsConfig::new().with_native_roots())?
+        .connect()
+        .await?;
+    Ok(OrderBookStreamingClient::new(channel))
+}
+
+fn with_auth<T>(message: T, token: String) -> Result<Request<T>, BoxError> {
+    let mut request = Request::new(message);
+    request
+        .metadata_mut()
+        .insert("x-token", token.parse::<MetadataValue<_>>()?);
+    Ok(request)
+}
+
+pub struct HlL2BookDiff {
+    config: Cfg,
+    tx: Sender<L2BookDiffUpdate>,
+}
+
+impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
+    type Stream = Streaming<L2BookDiffUpdate>;
+
+    fn new(config: Cfg, tx: Sender<L2BookDiffUpdate>) -> Self {
+        HlL2BookDiff { config, tx }
+    }
+
+    async fn initialise(&self) -> Result<Self::Stream, BoxError> {
+        let mut client = orderbook_client(self.config.grpc.endpoint.clone()).await?;
+
+        let request = L2BookDiffRequest {
+            coins: self.config.stream.coins.clone(),
+            n_levels: self.config.stream.n_levels,
+            n_sig_figs: None,
+            mantissa: None,
+            skip_initial_snapshot: false,
+        };
+
+        let stream = client
+            .stream_l2_book_diff(with_auth(request, self.config.grpc.auth_token.clone())?)
+            .await?
+            .into_inner();
+
+        Ok(stream)
+    }
+
+    async fn produce(&self, mut stream: Self::Stream) -> Result<(), BoxError> {
+        loop {
+            match stream.message().await {
+                Ok(Some(update)) => {
+                    if self.tx.send(update).await.is_err() {
+                        break;
+                    }
+                }
+                Ok(None) => break,
+                Err(status) => {
+                    // TODO: reconnect / backoff instead of bailing out.
+                    // eprintln!("stream error: {}", status);
+                    break;
+                } // Ok(Some(update)) => {
+                  //     // println!(
+                  //     //     "L2 diff {} {} {}",
+                  //     //     update.time, update.height, update.snapshot,
+                  //     // );
+
+                  //     // for diff in update.diffs {
+                  //     //     println!("{} {} {}", diff.coin, diff.seq, diff.prev_seq,);
+
+                  //     //     for bid in diff.bids {
+                  //     //         println!("{} {} {}", bid.px, bid.sz, bid.n)
+                  //     //     }
+
+                  //     //     for ask in diff.asks {
+                  //     //         println!("{} {} {}", ask.px, ask.sz, ask.n)
+                  //     //     }
+                  //     // }
+
+                  //     // msg_count += 1;
+                  //     // if msg_count >= MAX_MSG {
+                  //     //     return Ok(());
+                  //     // }
+                  // }
+                  // Ok(None) => {},
+                  // Err(status) => {
+                  //     println!("{}", status);
+                  // }
+            }
+        }
+
+        Ok(())
+    }
+}
