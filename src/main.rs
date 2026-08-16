@@ -1,7 +1,5 @@
 use hl_md_handler::{
-    config::Cfg,
-    feeds::{feed::Feed, hyperliquid::hl_l2_book_diff::HlL2BookDiff},
-    orderbook::L2BookDiffUpdate,
+    config::Cfg, feed::{Feed, HlL2BookDiff}, orderbook::L2BookDiffUpdate,
 };
 use tokio::sync::mpsc;
 

@@ -1,12 +1,24 @@
+use crate::config::Cfg;
+use std::error::Error;
 use tokio::sync::mpsc::Sender;
+
 use tonic::metadata::MetadataValue;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Request, Streaming};
 
-use crate::config::Cfg;
-use crate::feeds::feed::{BoxError, Feed};
+// use crate::config::Cfg;
+// use crate::feeds::feed::{BoxError, Feed};
 use crate::orderbook::order_book_streaming_client::OrderBookStreamingClient;
 use crate::orderbook::{L2BookDiffRequest, L2BookDiffUpdate};
+
+pub type BoxError = Box<dyn Error + Send + Sync>;
+
+pub trait Feed<T> {
+    type Stream;
+    fn new(config: Cfg, tx: Sender<T>) -> Self;
+    async fn initialise(&self) -> Result<Self::Stream, BoxError>;
+    async fn produce(&self, stream: Self::Stream) -> Result<(), BoxError>;
+}
 
 async fn orderbook_client(endpoint: String) -> Result<OrderBookStreamingClient<Channel>, BoxError> {
     let channel = Channel::from_shared(endpoint)?
