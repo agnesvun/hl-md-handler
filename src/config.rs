@@ -6,7 +6,7 @@ const CONFIG_PATH: &str = "config/config.toml";
 #[derive(Debug, Deserialize)]
 pub struct Cfg {
     pub grpc: Grpc,
-    pub stream: Stream,
+    pub feed: Feed,
 }
 
 #[derive(Debug, Deserialize)]
@@ -16,9 +16,8 @@ pub struct Grpc {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Stream {
+pub struct Feed {
     pub coins: Vec<String>,
-    pub n_levels: u32,
 }
 
 impl Cfg {

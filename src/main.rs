@@ -1,26 +1,15 @@
 use hl_md_handler::{
-    config::Cfg, feed::{Feed, HlL2BookDiff}, orderbook::L2BookDiffUpdate,
+    config::Cfg,
+    engine::Engine,
+    feed::{Feed, HlL2BookDiff},
+    orderbook::L2BookDiffUpdate,
 };
 use tokio::sync::mpsc;
-
-const CHANNEL_CAP: usize = 1024;
-
-async fn consume(mut rx: mpsc::Receiver<L2BookDiffUpdate>) {
-    while let Some(update) = rx.recv().await {
-        println!(
-            "L2 diff time={} height={} snapshot={} coins={}",
-            update.time,
-            update.height,
-            update.snapshot,
-            update.diffs.len(),
-        );
-    }
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Cfg::load()?;
-    let (tx, rx) = mpsc::channel::<L2BookDiffUpdate>(CHANNEL_CAP);
+    let (tx, rx) = mpsc::channel::<L2BookDiffUpdate>(1024);
 
     let hl_feed = HlL2BookDiff::new(config, tx);
 
@@ -34,11 +23,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         if let Err(e) = hl_feed.produce(stream).await {
-            eprintln!("producer failed: {}", e);
+            // eprintln!("producer failed: {}", e);
         }
     });
-
-    consume(rx).await;
+    
+    let mut engine = Engine::new(rx);
+    engine.run().await;
 
     producer.await?;
 

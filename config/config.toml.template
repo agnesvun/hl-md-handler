@@ -2,6 +2,5 @@
 endpoint = ""
 auth_token = ""
 
-[stream]
+[feed]
 coins = ["BTC"]
-n_levels = 5

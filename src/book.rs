@@ -4,21 +4,29 @@ pub enum Side {
     Ask,
 }
 
+pub enum BookStatus {
+    Init,
+    Active,
+    Error,
+}
+
 pub type Px = u64;
 pub type Sz = u64;
 
-const MULTIPLIER: u64 = 1_000_000;
 const MAX_LEVEL: usize = 20;
 
 pub struct OrderBook {
     bids: BookSide,
     asks: BookSide,
+    seq: u64,
+    status: BookStatus,
+    ts_ms: u64,
 }
 
 struct BookSide {
     side: Side,
     levels: [Level; MAX_LEVEL],
-    len: usize, // valid levels
+    valid_len: usize, // valid levels
 }
 
 #[derive(Clone, Copy, Default)]
@@ -32,13 +40,51 @@ impl OrderBook {
         Self {
             bids: BookSide::new(Side::Bid),
             asks: BookSide::new(Side::Ask),
+            seq: 0,
+            status: BookStatus::Init,
+            ts_ms: 0,
         }
+    }
+
+    pub fn check_seq(&mut self, prev_seq: u64) -> bool {
+        if prev_seq != self.seq {
+            println!("gap detected");
+            self.status = BookStatus::Error;
+            return false;
+        }
+
+        true
+    }
+
+    pub fn update_seq(&mut self, seq: u64) {
+        self.seq = seq;
+        self.status = BookStatus::Active;
     }
 
     pub fn apply(&mut self, side: Side, px: Px, sz: Sz) {
         match side {
             Side::Bid => self.bids.apply(px, sz),
             Side::Ask => self.asks.apply(px, sz),
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.bids.reset();
+        self.asks.reset();
+        self.seq = 0;
+        self.status = BookStatus::Init;
+        self.ts_ms = 0;
+    }
+}
+
+impl Default for OrderBook {
+    fn default() -> Self {
+        Self {
+            bids: BookSide::new(Side::Bid),
+            asks: BookSide::new(Side::Ask),
+            seq: Default::default(),
+            status: BookStatus::Init,
+            ts_ms: Default::default(),
         }
     }
 }
@@ -48,12 +94,12 @@ impl BookSide {
         Self {
             side,
             levels: [Level::default(); MAX_LEVEL],
-            len: 0,
+            valid_len: 0,
         }
     }
 
     fn levels(&self) -> &[Level] {
-        &self.levels[..self.len]
+        &self.levels[..self.valid_len]
     }
 
     fn apply(&mut self, px: Px, sz: Sz) {
@@ -93,7 +139,7 @@ impl BookSide {
             }
         }
 
-        Err(self.len)
+        Err(self.valid_len)
     }
 
     fn insert(&mut self, idx: usize, level: Level) {
@@ -102,14 +148,19 @@ impl BookSide {
         }
 
         // end is [0, MAX_LEVEL)
-        let end = self.len.min(MAX_LEVEL - 1);
+        let end = self.valid_len.min(MAX_LEVEL - 1);
         self.levels.copy_within(idx..end, idx + 1);
         self.levels[idx] = level;
-        self.len = (self.len + 1).min(MAX_LEVEL)
+        self.valid_len = (self.valid_len + 1).min(MAX_LEVEL)
     }
 
     fn remove(&mut self, idx: usize) {
-        self.levels.copy_within(idx + 1..self.len, idx);
-        self.len -= 1;
+        self.levels.copy_within(idx + 1..self.valid_len, idx);
+        self.valid_len -= 1;
+    }
+
+    fn reset(&mut self) {
+        self.levels = [Level::default(); MAX_LEVEL];
+        self.valid_len = 0;
     }
 }

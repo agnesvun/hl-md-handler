@@ -1,15 +1,11 @@
 use crate::config::Cfg;
+use crate::orderbook::order_book_streaming_client::OrderBookStreamingClient;
+use crate::orderbook::{L2BookDiffRequest, L2BookDiffUpdate};
 use std::error::Error;
 use tokio::sync::mpsc::Sender;
-
 use tonic::metadata::MetadataValue;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Request, Streaming};
-
-// use crate::config::Cfg;
-// use crate::feeds::feed::{BoxError, Feed};
-use crate::orderbook::order_book_streaming_client::OrderBookStreamingClient;
-use crate::orderbook::{L2BookDiffRequest, L2BookDiffUpdate};
 
 pub type BoxError = Box<dyn Error + Send + Sync>;
 
@@ -52,8 +48,8 @@ impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
         let mut client = orderbook_client(self.config.grpc.endpoint.clone()).await?;
 
         let request = L2BookDiffRequest {
-            coins: self.config.stream.coins.clone(),
-            n_levels: self.config.stream.n_levels,
+            coins: self.config.feed.coins.clone(),
+            n_levels: 20,
             n_sig_figs: None,
             mantissa: None,
             skip_initial_snapshot: false,
@@ -98,10 +94,6 @@ impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
                   //     //     }
                   //     // }
 
-                  //     // msg_count += 1;
-                  //     // if msg_count >= MAX_MSG {
-                  //     //     return Ok(());
-                  //     // }
                   // }
                   // Ok(None) => {},
                   // Err(status) => {
