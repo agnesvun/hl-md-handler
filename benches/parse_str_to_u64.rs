@@ -8,11 +8,11 @@ fn parse_str_to_u64(c: &mut Criterion) {
 
     for s in inputs {
         group.bench_with_input(BenchmarkId::new("engine_parse", s), s, |b, s| {
-            b.iter(|| Engine::parse_to_u64_with_mul(black_box(s)))
+            b.iter(|| black_box(Engine::parse_to_u64_with_mul(black_box(s))))
         });
 
         group.bench_with_input(BenchmarkId::new("f64_parse", s), s, |b, s| {
-            b.iter(|| (black_box(s).parse::<f64>().unwrap() * 1_000_000.0) as u64)
+            b.iter(|| black_box((black_box(s).parse::<f64>().unwrap() * 1_000_000.0).round() as u64))
         });
     }
 
