@@ -7,7 +7,7 @@ A L2 orderbook data handler for Hyperliquid DEX using Quicknode's gRPC API
 - Uses `tracing-appender` for non-blocking logging
 - Connects to Quicknode's Hyperliquid API, requiring gRPC endpoint and auth token (I can provide a temporary set for demo purpose)
 - Book levels are processed in fixed-size, sorted arrays. Uses linear search for level searching favoring top levels, and `copy_within()` for updating levels in place
-- Faster parsing from decimal string to `u64`
+- [Faster parsing](https://github.com/agnesvun/hl-md-handler/tree/master#benchmarks) from decimal string to `u64`
 - Supports multiple perpetual symbols
 
 ### Quickstart
