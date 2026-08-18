@@ -4,6 +4,7 @@ use crate::{
 };
 use std::collections::HashMap;
 use tokio::sync::mpsc::Receiver;
+use tracing::{error, info};
 
 const MULTIPLIER: u64 = 1_000_000;
 
@@ -22,43 +23,43 @@ impl Engine {
 
     pub async fn run(&mut self) {
         while let Some(update) = self.rx.recv().await {
-            println!(
-                "L2 diff time={} height={} snapshot={} coins={}",
-                update.time,
-                update.height,
-                update.snapshot,
-                update.diffs.len(),
-            );
             self.on_update(update);
         }
     }
 
     fn on_update(&mut self, update: L2BookDiffUpdate) {
         for diff in update.diffs {
-            self.on_diff(diff);
+            self.on_diff(diff, update.time);
         }
     }
 
-    fn on_diff(&mut self, diff: L2CoinDiff) {
-        let book = self.books.entry(diff.coin).or_default();
+    fn on_diff(&mut self, diff: L2CoinDiff, ts_ms: u64) {
+        let book = match self.books.get_mut(&diff.coin) {
+            Some(book) => book,
+            None => self.books.entry(diff.coin.clone()).or_default(),
+        };
 
         // whenever a snapshot is received, reset the book and start over
         if diff.snapshot {
             book.reset();
         }
 
-        if !book.check_seq(diff.prev_seq) {
-            // out of sequence
+        if !book.is_in_seq(diff.prev_seq) {
+            book.set_status(BookStatus::Error);
+            error!(
+                "Gap detected, book_seq ({}) != diff.prev_seq ({})",
+                book.seq(),
+                diff.prev_seq
+            );
             return;
         }
 
         Self::apply_levels(book, &diff.bids, &diff.asks);
-        book.update_seq(diff.seq);
+        book.set_seq(diff.seq);
+        book.set_status(BookStatus::Active);
+        book.set_ts(ts_ms);
 
-        // println!(
-        //     "update seq={}, {}/{}",
-        //     book.seq, book.bids.levels[0].px, book.asks.levels[0].px
-        // );
+        Self::publish(&diff.coin, book);
     }
 
     fn apply_levels(book: &mut OrderBook, bids: &[L2Level], asks: &[L2Level]) {
@@ -77,6 +78,11 @@ impl Engine {
                 Engine::parse_scaled(&lv.sz),
             );
         }
+    }
+
+    // dummy publish
+    fn publish(coin: &str, book: &OrderBook) {
+        info!("Publish (mock): coin={} book={}", coin, book);
     }
 
     #[inline(always)]

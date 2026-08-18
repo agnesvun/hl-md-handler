@@ -7,9 +7,12 @@ edition = "2024"
 prost = "0.14.4"
 tonic = { version = "0.14.6", features = ["tls-ring", "tls-native-roots"] }
 tonic-prost = "0.14.6"
-tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros", "sync"] }
+tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros", "sync", "signal"] }
 serde = { version = "1.0.229", features = ["derive"] }
 config = "0.15.25"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.23"
+tracing-appender = "0.2.5"
 
 [build-dependencies]
 tonic-prost-build = "0.14.6"

@@ -6,6 +6,7 @@ use tokio::sync::mpsc::Sender;
 use tonic::metadata::MetadataValue;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Request, Streaming};
+use tracing::error;
 
 pub type BoxError = Box<dyn Error + Send + Sync>;
 
@@ -74,31 +75,9 @@ impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
                 Ok(None) => break,
                 Err(status) => {
                     // TODO: reconnect / backoff instead of bailing out.
-                    // eprintln!("stream error: {}", status);
+                    error!("Stream error: {}", status);
                     break;
-                } // Ok(Some(update)) => {
-                  //     // println!(
-                  //     //     "L2 diff {} {} {}",
-                  //     //     update.time, update.height, update.snapshot,
-                  //     // );
-
-                  //     // for diff in update.diffs {
-                  //     //     println!("{} {} {}", diff.coin, diff.seq, diff.prev_seq,);
-
-                  //     //     for bid in diff.bids {
-                  //     //         println!("{} {} {}", bid.px, bid.sz, bid.n)
-                  //     //     }
-
-                  //     //     for ask in diff.asks {
-                  //     //         println!("{} {} {}", ask.px, ask.sz, ask.n)
-                  //     //     }
-                  //     // }
-
-                  // }
-                  // Ok(None) => {},
-                  // Err(status) => {
-                  //     println!("{}", status);
-                  // }
+                }
             }
         }
 

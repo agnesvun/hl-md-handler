@@ -3,4 +3,4 @@ endpoint = ""
 auth_token = ""
 
 [feed]
-coins = ["BTC"]
+coins = ["BTC", "ETH", "HYPE"]
