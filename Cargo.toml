@@ -16,3 +16,10 @@ tracing-appender = "0.2.5"
 
 [build-dependencies]
 tonic-prost-build = "0.14.6"
+
+[dev-dependencies]
+criterion = "0.8.2"
+
+[[bench]]
+name = "parse_str_to_u64"
+harness = false

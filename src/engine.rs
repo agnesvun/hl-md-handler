@@ -66,16 +66,16 @@ impl Engine {
         for lv in bids {
             book.apply(
                 Side::Bid,
-                Engine::parse_scaled(&lv.px),
-                Engine::parse_scaled(&lv.sz),
+                Engine::parse_to_u64_with_mul(&lv.px),
+                Engine::parse_to_u64_with_mul(&lv.sz),
             );
         }
 
         for lv in asks {
             book.apply(
                 Side::Ask,
-                Engine::parse_scaled(&lv.px),
-                Engine::parse_scaled(&lv.sz),
+                Engine::parse_to_u64_with_mul(&lv.px),
+                Engine::parse_to_u64_with_mul(&lv.sz),
             );
         }
     }
@@ -86,11 +86,11 @@ impl Engine {
     }
 
     #[inline(always)]
-    pub fn parse_scaled(s: &str) -> u64 {
+    pub fn parse_to_u64_with_mul(s: &str) -> u64 {
         let mut acc: u64 = 0;
         let mut bytes = s.bytes();
 
-        while let Some(b) = bytes.next() {
+        for b in bytes.by_ref() {
             if b == b'.' {
                 break;
             }
