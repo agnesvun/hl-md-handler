@@ -1,14 +1,29 @@
 # hl-md-handler
+A L2 orderbook data handler for Hyperliquid DEX using Quicknode's gRPC API
 
-## Features
+### Features & Design Choices
+- Use `Tokio` and `Tonic` for async runtime and gRPC implementation
+- Use `tokio::sync::mpsc` as queue between producer (Feed) and consumer (Engine)
+- Use `tracing-appender` for non-blocking logging
+- Connect to Quicknode's Hyperliquid API, requiring gRPC endpoint and auth token (I can provide a temporary set for demo purpose)
+- Book levels are processed in fixed-size, sorted arrays. Use linear search for level searching favoring top levels, and `copy_within()` for updating levels in place
+- Faster parsing from decimal string to `u64`
+- Support multiple perpetual symbols
 
-## Quickstart
+### Quickstart
+Configuration: Put the gRPC endpoint, auth token, and perp symbols to subscribe in `config/config.toml`
 
-## Architecture
+At the project root:
+```
+$ cargo run --release
+```
 
-## File Structure
+### Architecture
 
-## Benchmarks
+### File Structure
+
+### Benchmarks
+A simple benchmark for `Engine::parse_to_u64_with_mul()`, with `s.parse::<f64>() as u64` as the baseline:
 ```
 parse_str_to_u64/engine_parse/123.456       time:   [2.3882 ns 2.3949 ns 2.4032 ns]
 parse_str_to_u64/f64_parse/123.456          time:   [7.3538 ns 7.3929 ns 7.4282 ns]
@@ -23,6 +38,13 @@ parse_str_to_u64/engine_parse/123456.7      time:   [2.9178 ns 2.9217 ns 2.9297 
 parse_str_to_u64/f64_parse/123456.7         time:   [7.3343 ns 7.4255 ns 7.5393 ns]
 ```
 
-## Limitations
+### Limitations
+- Support perpetuals only
+- No. of book levels (20) is not configurable as levels are stored in fixed-size arrays
 
-## Potential Improvements
+### Potential Improvements
+- ...
+
+---
+
+This repository is for learning purpose only
