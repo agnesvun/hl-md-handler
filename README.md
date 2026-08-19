@@ -19,7 +19,7 @@ $ cargo run --release
 ```
 
 ### Architecture
-todo
+![Architecture](./docs/hl-md-handler.drawio.svg)
 
 ### File Structure
 todo
