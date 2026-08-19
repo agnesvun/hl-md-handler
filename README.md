@@ -28,19 +28,19 @@ todo
 todo
 
 ### Benchmarks
-A simple benchmark using Criterion for `Engine::parse_to_u64_with_mul()`, with `s.parse::<f64>() as u64` as the baseline:
+A simple benchmark using Criterion for `Engine::parse_to_u64_with_mul()`, with `s.parse::<f64>() as u64` and `rust_decimal` as baselines:
 ```
-parse_str_to_u64/engine_parse/123.456       time:   [2.3882 ns 2.3949 ns 2.4032 ns]
-parse_str_to_u64/f64_parse/123.456          time:   [7.3538 ns 7.3929 ns 7.4282 ns]
+parse_str_to_u64/engine_parse/123.456       time:   [2.4227 ns 2.4547 ns 2.4972 ns]
+parse_str_to_u64/f64_parse/123.456          time:   [7.4213 ns 7.4233 ns 7.4261 ns]
+parse_str_to_u64/decimal_parse/123.456      time:   [20.967 ns 21.087 ns 21.205 ns]
 
-parse_str_to_u64/engine_parse/123           time:   [1.5925 ns 1.5953 ns 1.5990 ns]
-parse_str_to_u64/f64_parse/123              time:   [4.7746 ns 4.7750 ns 4.7755 ns]
+parse_str_to_u64/engine_parse/123           time:   [1.5904 ns 1.5908 ns 1.5914 ns]
+parse_str_to_u64/f64_parse/123              time:   [4.7720 ns 4.7765 ns 4.7825 ns]
+parse_str_to_u64/decimal_parse/123          time:   [11.491 ns 11.552 ns 11.611 ns]
 
-parse_str_to_u64/engine_parse/0.00123456    time:   [1.9513 ns 1.9735 ns 2.0037 ns]
-parse_str_to_u64/f64_parse/0.00123456       time:   [5.8745 ns 5.8934 ns 5.9167 ns]
-
-parse_str_to_u64/engine_parse/123456.7      time:   [2.9178 ns 2.9217 ns 2.9297 ns]
-parse_str_to_u64/f64_parse/123456.7         time:   [7.3343 ns 7.4255 ns 7.5393 ns]
+parse_str_to_u64/engine_parse/123456.7      time:   [2.9157 ns 2.9171 ns 2.9188 ns]
+parse_str_to_u64/f64_parse/123456.7         time:   [7.4221 ns 7.4282 ns 7.4375 ns]
+parse_str_to_u64/decimal_parse/123456.7     time:   [20.727 ns 20.840 ns 20.945 ns]
 ```
 
 ### Limitations
