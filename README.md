@@ -3,7 +3,7 @@ A L2 orderbook data handler for Hyperliquid DEX using Quicknode's gRPC API
 
 ### Features & Design Choices
 - Uses `Tokio` and `Tonic` for async runtime and gRPC implementation
-- Uses `tokio::sync::mpsc` as queue between producer (Feed) and consumer (Engine)
+- Uses `tokio::sync::mpsc` as the queue between producer (Feed) and consumer (Engine)
 - Uses `tracing-appender` for non-blocking logging
 - Connects to Quicknode's Hyperliquid API, requiring gRPC endpoint and auth token (I can provide a temporary set for demo purpose)
 - Book levels are processed in fixed-size, sorted arrays. Uses linear search for level searching favoring top levels, and `copy_within()` for updating levels in place
@@ -20,9 +20,6 @@ $ cargo run --release
 
 ### Architecture
 ![Architecture](./docs/hl-md-handler.drawio.svg)
-
-### File Structure
-todo
 
 ### Latency Measurement
 todo
