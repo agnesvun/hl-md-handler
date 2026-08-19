@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 
-const MULTIPLIER: u64 = 1_000_000;
+pub const MULTIPLIER: u64 = 1_000_000;
 
 pub struct Engine {
     rx: Receiver<L2BookDiffUpdate>,

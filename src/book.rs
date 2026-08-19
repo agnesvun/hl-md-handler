@@ -1,3 +1,4 @@
+use crate::engine::MULTIPLIER;
 use std::fmt::Display;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -62,8 +63,8 @@ impl Display for Level {
         write!(
             f,
             "{} @ {}",
-            self.sz as f64 / 1_000_000.0,
-            self.px as f64 / 1_000_000.0
+            self.sz as f64 / MULTIPLIER as f64,
+            self.px as f64 / MULTIPLIER as f64
         )
     }
 }
@@ -170,7 +171,7 @@ impl Display for BookSide {
         for lv in display_levels {
             write!(f, "{} | ", lv)?;
         }
-        
+
         Ok(())
     }
 }
