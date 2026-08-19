@@ -39,6 +39,14 @@ impl Engine {
             None => self.books.entry(diff.coin.clone()).or_default(),
         };
 
+        if book.status() == BookStatus::Init && !diff.snapshot {
+            error!(
+                "{} book is in Init state, expect a snapshot, seq={}",
+                diff.coin, diff.seq
+            );
+            return;
+        }
+
         if book.status() == BookStatus::Error && !diff.snapshot {
             error!(
                 "{} book is in Error state, skipping diff, seq={}",
@@ -323,7 +331,7 @@ mod tests {
             Some((101_000_000, 3_000_000))
         );
         assert_eq!(engine.book("BTC").seq(), 2);
-        
+
         assert_eq!(
             engine.book("ETH").best_bid_level(),
             Some((50_000_000, 2_000_000))
