@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Side {
     Bid,
     Ask,
@@ -15,6 +15,7 @@ impl Display for Side {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BookStatus {
     Init,
     Active,
@@ -50,7 +51,7 @@ struct BookSide {
     valid_len: usize, // valid levels
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, Debug)]
 struct Level {
     px: Px,
     sz: Sz,
@@ -58,7 +59,12 @@ struct Level {
 
 impl Display for Level {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} @ {}", self.sz, self.px)
+        write!(
+            f,
+            "{} @ {}",
+            self.sz as f64 / 1_000_000.0,
+            self.px as f64 / 1_000_000.0
+        )
     }
 }
 
@@ -108,6 +114,14 @@ impl OrderBook {
         }
     }
 
+    pub fn best_bid_level(&self) -> Option<(Px, Sz)> {
+        self.bids.best().map(|level| (level.px, level.sz))
+    }
+
+    pub fn best_ask_level(&self) -> Option<(Px, Sz)> {
+        self.asks.best().map(|level| (level.px, level.sz))
+    }
+
     pub fn seq(&self) -> u64 {
         self.seq
     }
@@ -116,11 +130,19 @@ impl OrderBook {
         self.seq = seq;
     }
 
+    pub fn status(&self) -> BookStatus {
+        self.status
+    }
+
     pub fn set_status(&mut self, status: BookStatus) {
         self.status = status;
     }
 
-    pub fn set_ts(&mut self, ts_ms: u64) {
+    pub fn ts_ms(&self) -> u64 {
+        self.ts_ms
+    }
+
+    pub fn set_ts_ms(&mut self, ts_ms: u64) {
         self.ts_ms = ts_ms;
     }
 
@@ -140,24 +162,15 @@ impl OrderBook {
     }
 }
 
-const DISPLAY_LEVEL: usize = 1;
+const DISPLAY_LEVEL: usize = 3;
 
 impl Display for BookSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let display_levels = self.levels().iter().take(DISPLAY_LEVEL);
-        match self.side {
-            Side::Bid => {
-                for lv in display_levels {
-                    write!(f, "{} ", lv)?;
-                }
-            }
-            Side::Ask => {
-                for lv in display_levels.rev() {
-                    write!(f, "{} ", lv)?;
-                }
-            }
+        for lv in display_levels {
+            write!(f, "{} | ", lv)?;
         }
-
+        
         Ok(())
     }
 }
@@ -239,5 +252,143 @@ impl BookSide {
     fn reset(&mut self) {
         self.levels = [Level::default(); MAX_LEVEL];
         self.valid_len = 0;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_bookside(side: Side, levels: &[(Px, Sz)]) -> BookSide {
+        let mut bs = BookSide::new(side);
+        for &(px, sz) in levels {
+            bs.apply(px, sz);
+        }
+
+        bs
+    }
+
+    fn test_book(bids: &[(Px, Sz)], asks: &[(Px, Sz)]) -> OrderBook {
+        let mut book = OrderBook::new();
+        book.bids = test_bookside(Side::Bid, bids);
+        book.asks = test_bookside(Side::Ask, asks);
+
+        book
+    }
+
+    fn prices(bs: &BookSide) -> Vec<Px> {
+        bs.levels().iter().map(|level| level.px).collect()
+    }
+
+    #[test]
+    fn bids_sorted_descending() {
+        let bs = test_bookside(Side::Bid, &[(100, 1), (102, 1), (101, 1), (99, 1)]);
+        assert_eq!(prices(&bs), vec![102, 101, 100, 99]);
+    }
+
+    #[test]
+    fn asks_sorted_ascending() {
+        let bs = test_bookside(Side::Ask, &[(102, 1), (100, 1), (101, 1), (103, 1)]);
+        assert_eq!(prices(&bs), vec![100, 101, 102, 103]);
+    }
+
+    #[test]
+    fn update_size_for_existing_price() {
+        let bs = test_bookside(Side::Bid, &[(100, 1), (99, 2), (100, 7)]);
+        assert_eq!(bs.valid_len, 2);
+        assert_eq!(bs.levels()[0], Level { px: 100, sz: 7 });
+    }
+
+    #[test]
+    fn zero_size_removes_the_level() {
+        let bs = test_bookside(Side::Bid, &[(100, 1), (99, 2), (98, 3), (99, 0)]);
+        assert_eq!(prices(&bs), vec![100, 98]);
+    }
+
+    #[test]
+    fn zero_size_for_non_existing_price() {
+        let bs = test_bookside(Side::Bid, &[(100, 1), (77, 0)]);
+        assert_eq!(bs.valid_len, 1);
+        assert_eq!(prices(&bs), vec![100]);
+    }
+
+    #[test]
+    fn remove_the_only_level() {
+        let bs = test_bookside(Side::Bid, &[(100, 1), (100, 0)]);
+        assert_eq!(bs.valid_len, 0);
+        assert!(bs.best().is_none());
+    }
+
+    #[test]
+    fn better_price_into_a_full_book() {
+        // full book
+        let mut bs = BookSide::new(Side::Bid);
+        for i in 0..MAX_LEVEL {
+            bs.apply(100 - i as Px, 1);
+        }
+
+        assert_eq!(bs.valid_len, MAX_LEVEL);
+        assert_eq!(*prices(&bs).last().unwrap(), 81);
+
+        bs.apply(200, 1);
+
+        assert_eq!(bs.valid_len, MAX_LEVEL);
+        assert_eq!(prices(&bs)[0], 200);
+        assert_eq!(*prices(&bs).last().unwrap(), 82);
+    }
+
+    #[test]
+    fn worse_price_into_a_full_book() {
+        // full book
+        let mut bs = BookSide::new(Side::Bid);
+        for i in 0..MAX_LEVEL {
+            bs.apply(100 - i as Px, 1);
+        }
+
+        bs.apply(1, 1);
+
+        assert_eq!(bs.valid_len, MAX_LEVEL);
+        assert!(!prices(&bs).contains(&1));
+        assert_eq!(*prices(&bs).last().unwrap(), 81);
+    }
+
+    #[test]
+    fn check_seq() {
+        let mut book = OrderBook::new();
+        assert!(book.is_in_seq(0));
+        book.set_seq(123);
+        assert!(book.is_in_seq(123));
+        assert!(!book.is_in_seq(122));
+        assert!(!book.is_in_seq(124));
+    }
+
+    #[test]
+    fn book_is_crossed() {
+        assert!(test_book(&[(101, 1)], &[(100, 1)]).is_crossed());
+        assert!(test_book(&[(100, 1)], &[(100, 1)]).is_crossed());
+        assert!(!test_book(&[(100, 1)], &[(101, 1)]).is_crossed());
+    }
+
+    #[test]
+    fn one_sided_book_not_crossed() {
+        assert!(!test_book(&[(100, 1)], &[]).is_crossed());
+        assert!(!test_book(&[], &[(100, 1)]).is_crossed());
+        assert!(!test_book(&[], &[]).is_crossed());
+    }
+
+    #[test]
+    fn reset_book() {
+        let mut book = test_book(&[(100, 1)], &[(101, 1)]);
+        book.set_seq(123);
+        book.set_status(BookStatus::Active);
+        book.set_ts_ms(1780000000000);
+
+        book.reset();
+
+        assert_eq!(book.bids.valid_len, 0);
+        assert_eq!(book.asks.valid_len, 0);
+        assert_eq!(book.seq(), 0);
+        assert_eq!(book.status(), BookStatus::Init);
+        assert_eq!(book.ts_ms(), 0);
     }
 }
