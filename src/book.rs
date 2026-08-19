@@ -76,17 +76,11 @@ impl Default for OrderBook {
 
 impl Display for OrderBook {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(
+        write!(
             f,
-            "OrderBook: seq={} status={} ts_ms={}",
-            self.seq, self.status, self.ts_ms,
+            "OrderBook: seq={} status={} ts_ms={} bid={} ask={}",
+            self.seq, self.status, self.ts_ms, self.bids, self.asks,
         )?;
-
-        writeln!(f, "--------------- Ask ---------------")?;
-        write!(f, "{}", self.asks)?;
-        writeln!(f, "---------------")?;
-        write!(f, "{}", self.bids)?;
-        write!(f, "--------------- Bid ---------------")?;
 
         Ok(())
     }
@@ -146,7 +140,7 @@ impl OrderBook {
     }
 }
 
-const DISPLAY_LEVEL: usize = 3;
+const DISPLAY_LEVEL: usize = 1;
 
 impl Display for BookSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -154,12 +148,12 @@ impl Display for BookSide {
         match self.side {
             Side::Bid => {
                 for lv in display_levels {
-                    writeln!(f, "{}", lv)?;
+                    write!(f, "{} ", lv)?;
                 }
             }
             Side::Ask => {
                 for lv in display_levels.rev() {
-                    writeln!(f, "{}", lv)?;
+                    write!(f, "{} ", lv)?;
                 }
             }
         }

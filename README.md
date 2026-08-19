@@ -24,6 +24,9 @@ todo
 ### File Structure
 todo
 
+### Latency Measurement
+todo
+
 ### Benchmarks
 A simple benchmark using Criterion for `Engine::parse_to_u64_with_mul()`, with `s.parse::<f64>() as u64` as the baseline:
 ```
@@ -42,9 +45,11 @@ parse_str_to_u64/f64_parse/123456.7         time:   [7.3343 ns 7.4255 ns 7.5393 
 
 ### Limitations
 - Support perpetuals only
-- No. of book levels (20) is not configurable as levels are stored in fixed-size arrays
+- No. of book levels (20) is not configurable
 
 ### Potential Improvements
-- ...
+- Book staleness check against RESTful
+- Support multiple exchanges using the Feed trait
+- Write to shared memory for IPC with actual clients
 
 This repository is for learning purpose only

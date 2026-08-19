@@ -13,8 +13,8 @@ pub type BoxError = Box<dyn Error + Send + Sync>;
 pub trait Feed<T> {
     type Stream;
     fn new(config: Cfg, tx: Sender<T>) -> Self;
-    async fn initialise(&self) -> Result<Self::Stream, BoxError>;
-    async fn produce(&self, stream: Self::Stream) -> Result<(), BoxError>;
+    fn initialise(&self) -> impl std::future::Future<Output = Result<Self::Stream, BoxError>> + Send;
+    fn produce(&self, stream: Self::Stream) -> impl std::future::Future<Output = Result<(), BoxError>> + Send;
 }
 
 async fn orderbook_client(endpoint: String) -> Result<OrderBookStreamingClient<Channel>, BoxError> {
