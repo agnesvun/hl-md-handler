@@ -163,7 +163,7 @@ impl OrderBook {
     }
 }
 
-const DISPLAY_LEVEL: usize = 3;
+pub const DISPLAY_LEVEL: usize = 3;
 
 impl Display for BookSide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -1,5 +1,5 @@
 use crate::{
-    book::{BookStatus, OrderBook, Side},
+    book::{BookStatus, DISPLAY_LEVEL, OrderBook, Side},
     orderbook::{L2BookDiffUpdate, L2CoinDiff, L2Level},
 };
 use std::collections::HashMap;
@@ -112,7 +112,10 @@ impl Engine {
 
     // dummy publish
     fn publish(coin: &str, book: &OrderBook) {
-        info!("Publish (mock): coin={} book={}", coin, book);
+        info!(
+            "Publish (mock, display top {} levels): coin={} book={}",
+            DISPLAY_LEVEL, coin, book
+        );
     }
 
     #[inline(always)]
