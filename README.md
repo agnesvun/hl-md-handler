@@ -2,13 +2,13 @@
 A L2 orderbook data handler for Hyperliquid DEX using Quicknode's gRPC API
 
 ### Features & Design Choices
+- Processes top 20 levels of orderbook data for multiple perpetual symbols
 - Uses `Tokio` and `Tonic` for async runtime and gRPC implementation
 - Uses `tokio::sync::mpsc` as the queue between producer (Feed) and consumer (Engine)
 - Uses `tracing-appender` for non-blocking logging
 - Connects to Quicknode's Hyperliquid API, requiring gRPC endpoint and auth token (I can provide a temporary set for demo purpose)
 - Book levels are processed in fixed-size, sorted arrays. Uses linear search for level searching favoring top levels, and `copy_within()` for updating levels in place
 - [Faster parsing](#benchmarks) from decimal string to `u64`
-- Supports multiple perpetual symbols
 
 ### Quickstart
 Configuration: Put the gRPC endpoint, auth token, and perp symbols to subscribe in `config/config.toml`
