@@ -1,5 +1,5 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use hl_md_handler::engine::Engine;
+use hl_md_handler::engine::{Engine, MULTIPLIER};
 use std::hint::black_box;
 
 fn parse_str_to_u64(c: &mut Criterion) {
@@ -12,7 +12,7 @@ fn parse_str_to_u64(c: &mut Criterion) {
         });
 
         group.bench_with_input(BenchmarkId::new("f64_parse", s), s, |b, s| {
-            b.iter(|| black_box((black_box(s).parse::<f64>().unwrap() * 1_000_000.0).round() as u64))
+            b.iter(|| black_box((black_box(s).parse::<f64>().unwrap() * MULTIPLIER as f64).round() as u64))
         });
     }
 
