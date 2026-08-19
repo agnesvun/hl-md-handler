@@ -48,5 +48,6 @@ parse_str_to_u64/decimal_parse/123456.7     time:   [20.727 ns 20.840 ns 20.945 
 - Book staleness check against RESTful
 - Support multiple exchanges using the Feed trait
 - Write to shared memory for IPC with actual clients
+- Resubscription logic
 
 This repository is for learning purpose only
