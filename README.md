@@ -22,7 +22,13 @@ $ cargo run --release
 ![Architecture](./docs/hl-md-handler.drawio.svg)
 
 ### Latency Measurement
+Plotting [on_diff_elapsed](./src/engine.rs#L93) against time:
 ![Latency](./docs/lat.png)
+
+Summary (in us):
+| n | p50 | p75 | p90 | p95 | p99 | p99.9 |
+| - | - | - | - | - | - | - |
+| 12286 | 1.875 | 3.125 | 4.500 | 5.417 | 7.250 | 10.268 |
 
 ### Benchmarks
 A simple benchmark using Criterion for `Engine::parse_to_u64_with_mul()`, with `s.parse::<f64>() as u64` and `rust_decimal` as baselines:
