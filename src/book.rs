@@ -94,16 +94,6 @@ impl Display for OrderBook {
 }
 
 impl OrderBook {
-    pub fn new() -> Self {
-        Self {
-            bids: BookSide::new(Side::Bid),
-            asks: BookSide::new(Side::Ask),
-            seq: 0,
-            status: BookStatus::Init,
-            ts_ms: 0,
-        }
-    }
-
     pub fn is_in_seq(&self, prev_seq: u64) -> bool {
         prev_seq == self.seq
     }
@@ -270,7 +260,7 @@ mod tests {
     }
 
     fn test_book(bids: &[(Px, Sz)], asks: &[(Px, Sz)]) -> OrderBook {
-        let mut book = OrderBook::new();
+        let mut book = OrderBook::default();
         book.bids = test_bookside(Side::Bid, bids);
         book.asks = test_bookside(Side::Ask, asks);
 
@@ -355,7 +345,7 @@ mod tests {
 
     #[test]
     fn check_seq() {
-        let mut book = OrderBook::new();
+        let mut book = OrderBook::default();
         assert!(book.is_in_seq(0));
         book.set_seq(123);
         assert!(book.is_in_seq(123));

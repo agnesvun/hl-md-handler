@@ -62,7 +62,7 @@ impl Engine {
             book.reset();
         }
 
-        if !book.is_in_seq(diff.prev_seq) {
+        if !book.is_in_seq(diff.prev_seq) && !diff.snapshot {
             book.set_status(BookStatus::Error);
             error!(
                 "Gap detected for {}, book_seq ({}) != diff.prev_seq ({})",
@@ -129,6 +129,7 @@ impl Engine {
             if b == b'.' {
                 break;
             }
+            debug_assert!(b.is_ascii_digit());
             acc = acc * 10 + (b & 0x0F) as u64;
         }
         acc *= MULTIPLIER;
@@ -138,6 +139,7 @@ impl Engine {
             if w == 0 {
                 break;
             }
+            debug_assert!(b.is_ascii_digit());
             acc += (b & 0x0F) as u64 * w;
             w /= 10;
         }

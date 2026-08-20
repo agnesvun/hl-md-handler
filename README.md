@@ -1,5 +1,5 @@
 # hl-md-handler
-A L2 orderbook data handler for Hyperliquid DEX using Quicknode's gRPC API
+An L2 orderbook data handler for Hyperliquid DEX using Quicknode's gRPC API
 
 ### Features & Design Choices
 - Processes top 20 levels of orderbook data for multiple perpetual symbols
@@ -21,9 +21,9 @@ $ cargo run --release
 ### Architecture
 ![Architecture](./docs/hl-md-handler.drawio.svg)
 
-### Latency Measurement
+### Processing Time Measurement
 Plotting [on_diff_elapsed](./src/engine.rs#L93) against time:
-![Latency](./docs/lat.png)
+![Processing Time](./docs/lat.png)
 
 Summary (in us):
 | n | p50 | p75 | p90 | p95 | p99 | p99.9 |
@@ -47,7 +47,7 @@ parse_str_to_u64/decimal_parse/123456.7     time:   [20.727 ns 20.840 ns 20.945 
 ```
 
 ### Limitations
-- Support perpetuals only
+- Supports perpetuals only
 - No. of book levels (20) is not configurable
 
 ### Potential Improvements
@@ -56,5 +56,3 @@ parse_str_to_u64/decimal_parse/123456.7     time:   [20.727 ns 20.840 ns 20.945 
 - Write to shared memory for IPC with actual clients
 - Resubscription logic
 - ...
-
-This repository is for learning purpose only

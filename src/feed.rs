@@ -2,6 +2,7 @@ use crate::config::Cfg;
 use crate::orderbook::order_book_streaming_client::OrderBookStreamingClient;
 use crate::orderbook::{L2BookDiffRequest, L2BookDiffUpdate};
 use std::error::Error;
+use std::time::Duration;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::error::TrySendError;
 use tonic::metadata::MetadataValue;
@@ -26,6 +27,8 @@ pub trait Feed<T> {
 async fn orderbook_client(endpoint: String) -> Result<OrderBookStreamingClient<Channel>, BoxError> {
     let channel = Channel::from_shared(endpoint)?
         .tls_config(ClientTlsConfig::new().with_native_roots())?
+        .http2_keep_alive_interval(Duration::from_secs(20))
+        .tcp_nodelay(true)
         .connect()
         .await?;
     Ok(OrderBookStreamingClient::new(channel))
@@ -76,18 +79,15 @@ impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
                 Ok(Some(update)) => match self.tx.try_send(update) {
                     Ok(()) => {}
                     Err(TrySendError::Full(update)) => {
-                        error!("Queue is full: {:?}", update);
-                        break;
+                        error!("Queue is full, drop update: time={}", update.time);
                     }
                     Err(TrySendError::Closed(update)) => {
-                        error!("Receiver is closed: {:?}", update);
-                        break;
+                        return Err(TrySendError::Closed(update).into());
                     }
                 },
                 Ok(None) => break,
                 Err(status) => {
-                    error!("Stream error: {}", status);
-                    break;
+                    return Err(status.into());
                 }
             }
         }
