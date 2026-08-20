@@ -85,7 +85,7 @@ impl Display for OrderBook {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "OrderBook: seq={} status={} ts_ms={} bid={} ask={}",
+            "OrderBook: seq={} status={} ts_ms={} bids={} asks={}",
             self.seq, self.status, self.ts_ms, self.bids, self.asks,
         )?;
 
