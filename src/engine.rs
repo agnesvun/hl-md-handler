@@ -2,7 +2,7 @@ use crate::{
     book::{BookStatus, DISPLAY_LEVEL, OrderBook, Side},
     orderbook::{L2BookDiffUpdate, L2CoinDiff, L2Level},
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 use tokio::sync::mpsc::Receiver;
 use tracing::{error, info};
 
@@ -34,6 +34,8 @@ impl Engine {
     }
 
     fn on_diff(&mut self, diff: L2CoinDiff, ts_ms: u64) {
+        let now = Instant::now();
+
         let book = match self.books.get_mut(&diff.coin) {
             Some(book) => book,
             None => self.books.entry(diff.coin.clone()).or_default(),
@@ -88,8 +90,8 @@ impl Engine {
         }
 
         book.set_status(BookStatus::Active);
-
-        Self::publish(&diff.coin, book);
+        let elapsed_ns = now.elapsed().as_nanos();
+        Self::publish(&diff.coin, book, elapsed_ns);
     }
 
     fn apply_levels(book: &mut OrderBook, bids: &[L2Level], asks: &[L2Level]) {
@@ -111,10 +113,10 @@ impl Engine {
     }
 
     // dummy publish
-    fn publish(coin: &str, book: &OrderBook) {
+    fn publish(coin: &str, book: &OrderBook, elapsed_ns: u128) {
         info!(
-            "Publish (mock, display top {} levels): coin={} book={}",
-            DISPLAY_LEVEL, coin, book
+            "Publish (mock, display top {} levels): coin={} book={} on_diff_elapsed_ns={}",
+            DISPLAY_LEVEL, coin, book, elapsed_ns
         );
     }
 

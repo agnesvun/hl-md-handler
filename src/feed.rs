@@ -3,6 +3,7 @@ use crate::orderbook::order_book_streaming_client::OrderBookStreamingClient;
 use crate::orderbook::{L2BookDiffRequest, L2BookDiffUpdate};
 use std::error::Error;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::error::TrySendError;
 use tonic::metadata::MetadataValue;
 use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::{Request, Streaming};
@@ -68,13 +69,20 @@ impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
         loop {
             match stream.message().await {
                 Ok(Some(update)) => {
-                    if self.tx.send(update).await.is_err() {
-                        break;
+                    match self.tx.try_send(update) {
+                        Ok(()) => {},
+                        Err(TrySendError::Full(update)) => {
+                            error!("Queue is full: {:?}", update);
+                            break;
+                        },
+                        Err(TrySendError::Closed(update)) => {
+                            error!("Receiver is closed: {:?}", update);
+                            break;
+                        },
                     }
                 }
                 Ok(None) => break,
                 Err(status) => {
-                    // TODO: reconnect / backoff instead of bailing out.
                     error!("Stream error: {}", status);
                     break;
                 }
