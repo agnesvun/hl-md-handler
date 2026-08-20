@@ -14,8 +14,13 @@ pub type BoxError = Box<dyn Error + Send + Sync>;
 pub trait Feed<T> {
     type Stream;
     fn new(config: Cfg, tx: Sender<T>) -> Self;
-    fn initialise(&self) -> impl std::future::Future<Output = Result<Self::Stream, BoxError>> + Send;
-    fn produce(&self, stream: Self::Stream) -> impl std::future::Future<Output = Result<(), BoxError>> + Send;
+    fn initialise(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Self::Stream, BoxError>> + Send;
+    fn produce(
+        &self,
+        stream: Self::Stream,
+    ) -> impl std::future::Future<Output = Result<(), BoxError>> + Send;
 }
 
 async fn orderbook_client(endpoint: String) -> Result<OrderBookStreamingClient<Channel>, BoxError> {
@@ -68,19 +73,17 @@ impl Feed<L2BookDiffUpdate> for HlL2BookDiff {
     async fn produce(&self, mut stream: Self::Stream) -> Result<(), BoxError> {
         loop {
             match stream.message().await {
-                Ok(Some(update)) => {
-                    match self.tx.try_send(update) {
-                        Ok(()) => {},
-                        Err(TrySendError::Full(update)) => {
-                            error!("Queue is full: {:?}", update);
-                            break;
-                        },
-                        Err(TrySendError::Closed(update)) => {
-                            error!("Receiver is closed: {:?}", update);
-                            break;
-                        },
+                Ok(Some(update)) => match self.tx.try_send(update) {
+                    Ok(()) => {}
+                    Err(TrySendError::Full(update)) => {
+                        error!("Queue is full: {:?}", update);
+                        break;
                     }
-                }
+                    Err(TrySendError::Closed(update)) => {
+                        error!("Receiver is closed: {:?}", update);
+                        break;
+                    }
+                },
                 Ok(None) => break,
                 Err(status) => {
                     error!("Stream error: {}", status);
