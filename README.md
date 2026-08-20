@@ -22,7 +22,7 @@ $ cargo run --release
 ![Architecture](./docs/hl-md-handler.drawio.svg)
 
 ### Latency Measurement
-todo
+![Latency](./docs/lat.png)
 
 ### Benchmarks
 A simple benchmark using Criterion for `Engine::parse_to_u64_with_mul()`, with `s.parse::<f64>() as u64` and `rust_decimal` as baselines:
