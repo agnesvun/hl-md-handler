@@ -22,7 +22,7 @@ $ cargo run --release
 ![Architecture](./docs/hl-md-handler.drawio.svg)
 
 ### Processing Time Measurement
-Plotting [on_diff_elapsed](./src/engine.rs#L93) against time:
+Plotting [on_diff_elapsed](./src/engine.rs#L93) against time (running on Apple M3 Pro):
 ![Processing Time](./docs/lat.png)
 
 Summary (in us):
